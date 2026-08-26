@@ -5,7 +5,7 @@ on:
     branches: [ master, main ]
   pull_request:
     branches: [ master, main ]
-  workflow_dispatch: # Allows manual pipeline triggering from the GitHub Actions dashboard
+  workflow_dispatch:
 
 jobs:
   build-windows:
@@ -44,16 +44,17 @@ jobs:
           mingw-w64-x86_64-liblo
           mingw-w64-x86_64-asiosdk
 
-    - name: Run Waf Configure (Enabling Audio Drivers & Plugins)
+    - name: Run Waf Configure
       shell: msys2 {0}
       run: |
-        # Configures Ardour using internal vendored gtkmm elements and enables requested audio stacks
-        python waf configure --ptformat --optimize --no-phone-home --windows-vst --vst3 --asio
+        # Configures using the exact supported arguments shown in your waf options
+        python waf configure --ptformat --optimize --no-phone-home --with-backends=portaudio
 
     - name: Run Waf Build
       shell: msys2 {0}
       run: |
-        python waf
+        # Compiles using parallel processing threads to maximize GitHub runner speeds
+        python waf build -j4
 
     - name: Stage Build Binaries and Shared Libraries
       shell: msys2 {0}
