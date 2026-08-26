@@ -1,11 +1,11 @@
-name: Build Ardour for Windows
+name: Build Ardour for Windows (with ASIO & VST)
 
 on:
   push:
     branches: [ master, main ]
   pull_request:
     branches: [ master, main ]
-  workflow_dispatch: # Allows you to trigger the build manually from the GitHub UI
+  workflow_dispatch: # Allows manual pipeline triggering from the GitHub Actions dashboard
 
 jobs:
   build-windows:
@@ -33,7 +33,7 @@ jobs:
           mingw-w64-x86_64-boost
           mingw-w64-x86_64-gtk2
           mingw-w64-x86_64-glibmm
-          mingw-w64-x86_64-gtkmm24
+          mingw-w64-x86_64-gtkmm
           mingw-w64-x86_64-libxml2
           mingw-w64-x86_64-libsndfile
           mingw-w64-x86_64-libsamplerate
@@ -43,28 +43,33 @@ jobs:
           mingw-w64-x86_64-fftw
           mingw-w64-x86_64-aubio
           mingw-w64-x86_64-liblo
+          mingw-w64-x86_64-asiosdk
 
-    - name: Run Waf Configure
+    - name: Run Waf Configure (Enabling Audio Drivers & Plugins)
       shell: msys2 {0}
       run: |
-        python waf configure --ptformat --optimize --no-phone-home
+        # Explicit flags forcing ASIO compilation alongside Windows VST environments
+        python waf configure --ptformat --optimize --no-phone-home --windows-vst --vst3 --asio
 
     - name: Run Waf Build
       shell: msys2 {0}
       run: |
         python waf
 
-    - name: Stage Build Binaries
+    - name: Stage Build Binaries and Shared Libraries
       shell: msys2 {0}
       run: |
         mkdir -p deploy/bin
-        # Copy the build output. Adjust this folder pattern if your version targets specific subdirectories.
+        
+        # Copy compiled Ardour binary structures
         cp -r build/gtk2_ardour/* deploy/bin/ || true
-        # Copy required MinGW system DLLs so the app can launch on a standard Windows machine
+        
+        # Pull all required runtime DLL environments directly out of MinGW bin directory
+        # This keeps the binary portable and usable on vanilla installations without needing MSYS2.
         cp /mingw64/bin/*.dll deploy/bin/ || true
 
     - name: Upload Windows Build Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: Ardour-Windows-Build
+        name: Ardour-Windows-ASIO-VST
         path: deploy/bin/
