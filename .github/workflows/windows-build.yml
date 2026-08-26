@@ -47,13 +47,19 @@ jobs:
     - name: Run Waf Configure
       shell: msys2 {0}
       run: |
-        # Configures using the exact supported arguments shown in your waf options
-        python waf configure --ptformat --optimize --no-phone-home --with-backends=portaudio
+        # Explicitly force Waf to map to MinGW's GCC and G++ toolchain 
+        # Overriding MSVC cross-detection behaviors
+        export CC=/mingw64/bin/gcc
+        export CXX=/mingw64/bin/g++
+        
+        python waf configure --ptformat --optimize --no-phone-home --with-backends=portaudio --dist-target=mingw
 
     - name: Run Waf Build
       shell: msys2 {0}
       run: |
-        # Compiles using parallel processing threads to maximize GitHub runner speeds
+        export CC=/mingw64/bin/gcc
+        export CXX=/mingw64/bin/g++
+        
         python waf build -j4
 
     - name: Stage Build Binaries and Shared Libraries
